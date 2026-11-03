@@ -1,0 +1,643 @@
+{% extends 'base.html' %}
+
+{% block title %}Analysis Results - PhishDetect AI{% endblock %}
+{% block page_title %}Analysis Results{% endblock %}
+{% block page_subtitle %}Phishing Threat Intelligence & Deep Heuristic Inspection{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <!-- Hidden element carrying the scan ID from Flask template context -->
+    <div id="scan-id-data" data-scan-id="{{ scan_id }}"></div>
+
+    <!-- Header Actions Row -->
+    <div class="results-header-bar flex-between mb-4">
+        <div class="flex-align-center gap-2">
+            <a href="{{ url_for('main.analyze_page') }}" class="btn btn-secondary btn-sm">
+                <i data-lucide="arrow-left"></i>
+                <span>Analyze Another</span>
+            </a>
+            <a href="{{ url_for('main.history_page') }}" class="btn btn-secondary btn-sm">
+                <i data-lucide="history"></i>
+                <span>All Scans</span>
+            </a>
+        </div>
+
+        <div class="export-actions-group flex-align-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" id="export-json" title="Download Machine-Readable JSON Report">
+                <i data-lucide="file-json" class="text-cyan"></i>
+                <span>Export JSON</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="export-txt" title="Download Text Summary Report">
+                <i data-lucide="file-text" class="text-blue"></i>
+                <span>Export TXT</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="copy-report" title="Copy full report to clipboard">
+                <i data-lucide="copy"></i>
+                <span id="copy-report-text">Copy Report</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Top Grid: Risk Gauge & Executive Verdict -->
+    <div class="results-hero-grid">
+        <!-- Prominent Radial Gauge Card -->
+        <div class="card card-glow-cyan gauge-summary-card">
+            <div class="card-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <i data-lucide="shield-alert" class="text-cyan"></i>
+                    <h3 class="card-title">Consolidated Risk Score</h3>
+                </div>
+                <span class="badge" id="risk-category-badge">EVALUATING</span>
+            </div>
+
+            <div class="card-body flex-center flex-column py-4">
+                <!-- Circular SVG Progress Gauge -->
+                <div class="gauge-wrapper">
+                    <svg class="gauge-svg" viewBox="0 0 160 160">
+                        <circle class="gauge-bg" cx="80" cy="80" r="68"></circle>
+                        <circle class="gauge-progress" id="gauge-progress-circle" cx="80" cy="80" r="68"></circle>
+                    </svg>
+                    <div class="gauge-content">
+                        <div class="gauge-score-value font-mono" id="risk-score-display">--</div>
+                        <div class="gauge-score-total text-muted">/100</div>
+                    </div>
+                </div>
+
+                <div class="score-classification-title" id="score-classification-text">Analyzing Telemetry</div>
+
+                <!-- Score Breakdown Pills -->
+                <div class="score-breakdown-row mt-3">
+                    <div class="score-breakdown-item">
+                        <span class="breakdown-label">Rule Score</span>
+                        <span class="breakdown-val font-mono" id="rule-score-display">0 / 60</span>
+                    </div>
+                    <div class="score-divider"></div>
+                    <div class="score-breakdown-item">
+                        <span class="breakdown-label">AI Score</span>
+                        <span class="breakdown-val font-mono" id="ai-score-display">0 / 40</span>
+                    </div>
+                    <div class="score-divider"></div>
+                    <div class="score-breakdown-item">
+                        <span class="breakdown-label">Total Score</span>
+                        <span class="breakdown-val font-mono text-cyan" id="total-score-display">0 / 100</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Metadata & Executive Overview Card -->
+        <div class="card card-glow-blue meta-summary-card">
+            <div class="card-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <i data-lucide="mail-check" class="text-blue"></i>
+                    <h3 class="card-title">Email Payload Metadata</h3>
+                </div>
+                <span class="text-muted text-xs font-mono" id="scan-timestamp">Timestamp: --</span>
+            </div>
+
+            <div class="card-body">
+                <div class="meta-field">
+                    <span class="meta-field-label">Sender (Envelope):</span>
+                    <span class="meta-field-value font-mono text-break" id="email-sender">Loading...</span>
+                </div>
+
+                <div class="meta-field">
+                    <span class="meta-field-label">Subject Line:</span>
+                    <span class="meta-field-value font-medium text-break" id="email-subject">Loading...</span>
+                </div>
+
+                <div class="meta-field">
+                    <span class="meta-field-label">AI Verdict Engine:</span>
+                    <div class="flex-align-center gap-2 mt-1">
+                        <span class="badge" id="ai-verdict-badge">INSPECTING</span>
+                        <span class="text-xs text-muted" id="ai-confidence-text">Confidence: --</span>
+                    </div>
+                </div>
+
+                <div class="confidence-bar-container mt-2">
+                    <div class="flex-between text-xs text-muted mb-1">
+                        <span>Confidence Level</span>
+                        <span class="font-mono" id="confidence-percentage">0%</span>
+                    </div>
+                    <div class="confidence-bar-track">
+                        <div class="confidence-bar-fill" id="confidence-bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="system-uncertainty-note mt-3 text-xs text-muted" id="ai-uncertainty-note">
+                    <i data-lucide="info" class="inline-icon"></i>
+                    Dual-evaluation synthesis combines heuristic rules and deep language reasoning.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rule-Based Findings Section -->
+    <div class="card card-glow-cyan mt-4 findings-card">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="list-checks" class="text-cyan"></i>
+                <h3 class="card-title">Triggered Heuristic Indicators &amp; Evidence</h3>
+            </div>
+            <span class="card-count-badge" id="findings-count-badge">0 Indicators</span>
+        </div>
+
+        <div class="card-body">
+            <!-- Findings dynamic container -->
+            <div class="findings-list" id="findings-container">
+                <div class="findings-loading text-center py-4 text-muted">
+                    <div class="inline-spinner"></div> Compiling heuristic findings...
+                </div>
+            </div>
+
+            <!-- Clean / No Indicators Notice (Hidden if indicators exist) -->
+            <div class="clean-state-box" id="clean-state-box" style="display: none;">
+                <div class="clean-icon-wrap">
+                    <i data-lucide="shield-check" class="text-success"></i>
+                </div>
+                <div class="clean-content">
+                    <h4 class="clean-title text-success">No Suspicious Heuristic Indicators Detected</h4>
+                    <p class="clean-desc text-muted text-sm">
+                        This email did not trigger known high-risk urgency cues, deceptive link patterns, credential harvesting keywords, or financial solicitation traps.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Neural Analysis Section (Purple Glow Card) -->
+    <div class="card card-glow-purple mt-4 ai-analysis-card">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="sparkles" class="text-purple"></i>
+                <h3 class="card-title">Ollama AI Neural Assessment</h3>
+            </div>
+            <div class="ollama-availability-badge" id="ollama-status-badge">
+                <span class="pulse-dot"></span>
+                <span id="ollama-availability-text">Ollama AI Active</span>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Ollama Unavailable Warning (Hidden by default) -->
+            <div class="alert alert-warning mb-3" id="ollama-unavailable-alert" style="display: none;">
+                <i data-lucide="alert-triangle"></i>
+                <div>
+                    <strong>Local LLM Unavailable:</strong> Ollama server was not reachable during this scan. The score shown is derived solely from the 60-point heuristic rule engine. To enable neural language reasoning, ensure Ollama is running at your configured endpoint.
+                </div>
+            </div>
+
+            <!-- Key AI Reasoning Factors -->
+            <div class="ai-section-block">
+                <h4 class="ai-block-heading flex-align-center gap-1">
+                    <i data-lucide="brain-circuit" class="text-purple"></i>
+                    <span>Primary AI Reasoning &amp; Context</span>
+                </h4>
+                <ul class="ai-reasons-list" id="ai-reasons-list">
+                    <li class="text-muted">Awaiting reasoning points...</li>
+                </ul>
+            </div>
+
+            <!-- AI Extracted Evidence Snippets -->
+            <div class="ai-section-block mt-3">
+                <h4 class="ai-block-heading flex-align-center gap-1">
+                    <i data-lucide="quote" class="text-cyan"></i>
+                    <span>Extracted Suspicious Snippets</span>
+                </h4>
+                <div class="evidence-snippets-wrap" id="ai-evidence-list">
+                    <span class="text-muted text-sm">No suspicious snippet text was extracted.</span>
+                </div>
+            </div>
+
+            <!-- Actionable Recommendations -->
+            <div class="ai-section-block mt-4">
+                <h4 class="ai-block-heading flex-align-center gap-1">
+                    <i data-lucide="check-square-2" class="text-green"></i>
+                    <span>Recommended Security Actions</span>
+                </h4>
+                <div class="recommendations-grid" id="ai-recommendations-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Official Advisory Disclaimer -->
+    <div class="advisory-callout card mt-4">
+        <div class="flex-align-center gap-3">
+            <div class="advisory-icon-circle">
+                <i data-lucide="alert-octagon" class="text-danger"></i>
+            </div>
+            <div>
+                <h5 class="advisory-title text-danger">Official Advisory &amp; Legal Disclaimer</h5>
+                <p class="advisory-body text-muted text-sm">
+                    This AI-generated assessment is advisory and does not guarantee that an email is safe or malicious. Advanced attackers continuously evolve evasion tactics. Always verify unusual requests through secondary, out-of-band communication channels.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Actions Row -->
+    <div class="bottom-actions-row flex-between mt-4">
+        <a href="{{ url_for('main.analyze_page') }}" class="btn btn-primary btn-lg">
+            <i data-lucide="plus-circle"></i>
+            <span>Analyze Another Email</span>
+        </a>
+        <a href="{{ url_for('main.history_page') }}" class="btn btn-secondary btn-lg">
+            <i data-lucide="history"></i>
+            <span>View All Scan History</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Reference External Analysis Script -->
+<script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
+
+<!-- Embedded Result Render & Export Controller -->
+<script>
+    // Injected scan_data from Flask context if available
+    const initialScanData = {% if scan_data is defined and scan_data %}{{ scan_data | tojson | safe }}{% elif scan is defined and scan %}{{ scan | tojson | safe }}{% else %}null{% endif %};
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        const scanIdElem = document.getElementById('scan-id-data');
+        const scanId = scanIdElem ? scanIdElem.getAttribute('data-scan-id') : null;
+
+        let activeScan = initialScanData;
+
+        // If not passed in initial template context, fetch from API
+        if (!activeScan && scanId) {
+            try {
+                const res = await fetch(`/api/scan/${scanId}`);
+                if (!res.ok) throw new Error('Failed to retrieve scan report');
+                const data = await res.json();
+                activeScan = data.scan || data;
+            } catch (err) {
+                console.error('Failed to fetch scan data:', err);
+                document.getElementById('findings-container').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i data-lucide="alert-circle"></i>
+                        <span>Failed to load scan #${scanId}. Please check history.</span>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                return;
+            }
+        }
+
+        if (activeScan) {
+            renderScanReport(activeScan);
+        }
+
+        // Render Comprehensive Report UI
+        function renderScanReport(scan) {
+            // 1. Risk Score & Category
+            const score = scan.risk_score ?? scan.score ?? 0;
+            const category = (scan.category || calculateCategory(score)).toUpperCase();
+
+            const scoreDisplay = document.getElementById('risk-score-display');
+            if (scoreDisplay) scoreDisplay.textContent = score;
+
+            const categoryBadge = document.getElementById('risk-category-badge');
+            const classificationText = document.getElementById('score-classification-text');
+
+            let badgeClass = 'badge-low';
+            let strokeColor = '#10b981';
+
+            if (category === 'CRITICAL' || score >= 75) {
+                badgeClass = 'badge-critical';
+                strokeColor = '#ef4444';
+                if (classificationText) classificationText.textContent = 'Critical Phishing Danger';
+            } else if (category === 'HIGH' || score >= 50) {
+                badgeClass = 'badge-high';
+                strokeColor = '#f97316';
+                if (classificationText) classificationText.textContent = 'High Phishing Probability';
+            } else if (category === 'MEDIUM' || score >= 25) {
+                badgeClass = 'badge-medium';
+                strokeColor = '#eab308';
+                if (classificationText) classificationText.textContent = 'Suspicious Indicators Found';
+            } else {
+                badgeClass = 'badge-low';
+                strokeColor = '#10b981';
+                if (classificationText) classificationText.textContent = 'Likely Clean / Safe Email';
+            }
+
+            if (categoryBadge) {
+                categoryBadge.className = `badge ${badgeClass}`;
+                categoryBadge.textContent = category;
+            }
+
+            // Animate SVG Gauge
+            const progressCircle = document.getElementById('gauge-progress-circle');
+            if (progressCircle) {
+                const radius = 68;
+                const circumference = 2 * Math.PI * radius;
+                progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+                const offset = circumference - (score / 100) * circumference;
+                progressCircle.style.stroke = strokeColor;
+                setTimeout(() => {
+                    progressCircle.style.strokeDashoffset = offset;
+                }, 100);
+            }
+
+            // 2. Score Breakdown
+            const ruleScore = scan.rule_score ?? Math.min(60, Math.round(score * 0.6));
+            const aiScore = scan.ai_score ?? Math.max(0, score - ruleScore);
+
+            const ruleScoreEl = document.getElementById('rule-score-display');
+            const aiScoreEl = document.getElementById('ai-score-display');
+            const totalScoreEl = document.getElementById('total-score-display');
+
+            if (ruleScoreEl) ruleScoreEl.textContent = `${ruleScore} / 60`;
+            if (aiScoreEl) aiScoreEl.textContent = `${aiScore} / 40`;
+            if (totalScoreEl) totalScoreEl.textContent = `${score} / 100`;
+
+            // 3. Email Details
+            const senderEl = document.getElementById('email-sender');
+            const subjectEl = document.getElementById('email-subject');
+            const timestampEl = document.getElementById('scan-timestamp');
+
+            if (senderEl) senderEl.textContent = scan.sender || 'Not provided';
+            if (subjectEl) subjectEl.textContent = scan.subject || 'No Subject';
+            if (timestampEl) {
+                const dateObj = scan.created_at ? new Date(scan.created_at) : new Date();
+                timestampEl.textContent = `Timestamp: ${dateObj.toLocaleString()}`;
+            }
+
+            // 4. AI Verdict & Confidence
+            const aiVerdict = (scan.ai_verdict || (score >= 50 ? 'PHISHING' : 'LEGITIMATE')).toUpperCase();
+            const aiConfidence = scan.ai_confidence ?? (score >= 75 ? 0.94 : score >= 50 ? 0.82 : 0.90);
+            const confidencePercent = Math.round(aiConfidence * 100);
+
+            const aiVerdictBadge = document.getElementById('ai-verdict-badge');
+            const aiConfidenceText = document.getElementById('ai-confidence-text');
+            const confidenceBarFill = document.getElementById('confidence-bar-fill');
+            const confidencePercentEl = document.getElementById('confidence-percentage');
+
+            if (aiVerdictBadge) {
+                aiVerdictBadge.className = aiVerdict === 'PHISHING' ? 'badge badge-critical' : (aiVerdict === 'SUSPICIOUS' ? 'badge badge-medium' : 'badge badge-low');
+                aiVerdictBadge.textContent = aiVerdict;
+            }
+
+            if (aiConfidenceText) aiConfidenceText.textContent = `Confidence: ${confidencePercent}%`;
+            if (confidencePercentEl) confidencePercentEl.textContent = `${confidencePercent}%`;
+            if (confidenceBarFill) {
+                confidenceBarFill.style.width = `${confidencePercent}%`;
+                confidenceBarFill.style.backgroundColor = aiVerdict === 'PHISHING' ? '#ef4444' : '#10b981';
+            }
+
+            // Ollama Availability Warning Check
+            const isOllamaAvailable = scan.ollama_available !== false;
+            const ollamaAlert = document.getElementById('ollama-unavailable-alert');
+            const ollamaStatusText = document.getElementById('ollama-availability-text');
+            const ollamaStatusBadge = document.getElementById('ollama-status-badge');
+
+            if (!isOllamaAvailable) {
+                if (ollamaAlert) ollamaAlert.style.display = 'flex';
+                if (ollamaStatusText) ollamaStatusText.textContent = 'Ollama Unavailable';
+                if (ollamaStatusBadge) ollamaStatusBadge.classList.add('status-offline');
+            }
+
+            // 5. Findings Section
+            const findingsContainer = document.getElementById('findings-container');
+            const cleanBox = document.getElementById('clean-state-box');
+            const findingsCountBadge = document.getElementById('findings-count-badge');
+            const findings = scan.findings || scan.rule_findings || [];
+
+            if (findingsContainer) {
+                findingsContainer.innerHTML = '';
+
+                if (!findings || findings.length === 0) {
+                    if (cleanBox) cleanBox.style.display = 'flex';
+                    if (findingsCountBadge) findingsCountBadge.textContent = '0 Indicators';
+                } else {
+                    if (cleanBox) cleanBox.style.display = 'none';
+                    if (findingsCountBadge) findingsCountBadge.textContent = `${findings.length} Indicator${findings.length > 1 ? 's' : ''}`;
+
+                    findings.forEach(f => {
+                        const findingItem = document.createElement('div');
+                        const points = f.points ?? f.score ?? 10;
+
+                        let severityClass = 'severity-low';
+                        let iconName = 'alert-circle';
+                        if (points >= 20) {
+                            severityClass = 'severity-critical';
+                            iconName = 'flame';
+                        } else if (points >= 15) {
+                            severityClass = 'severity-high';
+                            iconName = 'alert-triangle';
+                        } else if (points >= 10) {
+                            severityClass = 'severity-medium';
+                            iconName = 'alert-octagon';
+                        }
+
+                        const typeName = escapeHtml(f.indicator_type || f.type || 'Suspicious Indicator');
+                        const desc = escapeHtml(f.description || f.desc || '');
+                        const snippets = f.evidence || f.snippets || [];
+
+                        let snippetHtml = '';
+                        if (Array.isArray(snippets) && snippets.length > 0) {
+                            snippetHtml = `
+                                <div class="finding-snippets">
+                                    <span class="snippet-title">Evidence Match:</span>
+                                    ${snippets.map(s => `<code class="evidence-tag">${escapeHtml(s)}</code>`).join(' ')}
+                                </div>
+                            `;
+                        } else if (typeof snippets === 'string' && snippets.trim()) {
+                            snippetHtml = `<div class="finding-snippets"><code class="evidence-tag">${escapeHtml(snippets)}</code></div>`;
+                        }
+
+                        findingItem.className = `finding-item ${severityClass}`;
+                        findingItem.innerHTML = `
+                            <div class="finding-header flex-between">
+                                <div class="flex-align-center gap-2">
+                                    <i data-lucide="${iconName}" class="finding-icon"></i>
+                                    <span class="finding-type">${typeName}</span>
+                                </div>
+                                <span class="finding-points font-mono">+${points} pts</span>
+                            </div>
+                            <p class="finding-desc">${desc}</p>
+                            ${snippetHtml}
+                        `;
+                        findingsContainer.appendChild(findingItem);
+                    });
+                }
+            }
+
+            // 6. AI Reasons & Evidence
+            const aiReasonsList = document.getElementById('ai-reasons-list');
+            const reasons = scan.ai_reasons || scan.reasons || [];
+            if (aiReasonsList) {
+                aiReasonsList.innerHTML = '';
+                if (Array.isArray(reasons) && reasons.length > 0) {
+                    reasons.forEach(r => {
+                        const li = document.createElement('li');
+                        li.textContent = r;
+                        aiReasonsList.appendChild(li);
+                    });
+                } else {
+                    const fallbackReason = score >= 50 
+                        ? 'High-risk patterns detected including urgent psychological pressure and unverified domains.' 
+                        : 'Sender attributes, language tone, and technical headers conform to standard legitimate communications.';
+                    aiReasonsList.innerHTML = `<li>${escapeHtml(fallbackReason)}</li>`;
+                }
+            }
+
+            const aiEvidenceList = document.getElementById('ai-evidence-list');
+            const aiEvidence = scan.ai_evidence || scan.evidence || [];
+            if (aiEvidenceList) {
+                aiEvidenceList.innerHTML = '';
+                if (Array.isArray(aiEvidence) && aiEvidence.length > 0) {
+                    aiEvidence.forEach(snippet => {
+                        const span = document.createElement('span');
+                        span.className = 'ai-evidence-pill';
+                        span.textContent = `"${snippet}"`;
+                        aiEvidenceList.appendChild(span);
+                    });
+                } else {
+                    aiEvidenceList.innerHTML = '<span class="text-muted text-sm">No anomalous snippets isolated by the AI model.</span>';
+                }
+            }
+
+            // 7. Recommended Actions
+            const recommendationsList = document.getElementById('ai-recommendations-list');
+            const recs = scan.recommended_actions || scan.recommendations || generateDefaultRecommendations(score);
+            if (recommendationsList) {
+                recommendationsList.innerHTML = '';
+                recs.forEach((rec, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'recommendation-card';
+                    div.innerHTML = `
+                        <div class="rec-num">${idx + 1}</div>
+                        <div class="rec-text">${escapeHtml(rec)}</div>
+                    `;
+                    recommendationsList.appendChild(div);
+                });
+            }
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function calculateCategory(score) {
+            if (score >= 75) return 'CRITICAL';
+            if (score >= 50) return 'HIGH';
+            if (score >= 25) return 'MEDIUM';
+            return 'LOW';
+        }
+
+        function generateDefaultRecommendations(score) {
+            if (score >= 50) {
+                return [
+                    "Do NOT click any hyperlinks or download attachments embedded in this message.",
+                    "Report this email directly to your corporate Security Operations Center (SOC).",
+                    "If credentials were submitted, immediately reset passwords and revoke active session tokens.",
+                    "Block the sender envelope domain at your mail gateway / firewall level."
+                ];
+            } else if (score >= 25) {
+                return [
+                    "Verify the sender's identity through secondary communication (phone, Slack) before replying.",
+                    "Hover over embedded hyperlinks to inspect full URLs before clicking.",
+                    "Look for misspellings or non-standard top-level domains."
+                ];
+            } else {
+                return [
+                    "Message appears legitimate, but standard security mindfulness applies.",
+                    "Ensure ongoing multi-factor authentication (MFA) is active on your accounts."
+                ];
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Export Actions
+        const exportJsonBtn = document.getElementById('export-json');
+        const exportTxtBtn = document.getElementById('export-txt');
+        const copyReportBtn = document.getElementById('copy-report');
+        const copyReportText = document.getElementById('copy-report-text');
+
+        if (exportJsonBtn) {
+            exportJsonBtn.addEventListener('click', () => {
+                if (scanId) {
+                    window.location.href = `/api/export/${scanId}?format=json`;
+                } else if (activeScan) {
+                    downloadFile(`scan_report_${Date.now()}.json`, JSON.stringify(activeScan, null, 2), 'application/json');
+                }
+            });
+        }
+
+        if (exportTxtBtn) {
+            exportTxtBtn.addEventListener('click', () => {
+                if (scanId) {
+                    window.location.href = `/api/export/${scanId}?format=txt`;
+                } else if (activeScan) {
+                    const txt = generatePlainTextReport(activeScan);
+                    downloadFile(`scan_report_${Date.now()}.txt`, txt, 'text/plain');
+                }
+            });
+        }
+
+        if (copyReportBtn) {
+            copyReportBtn.addEventListener('click', () => {
+                if (!activeScan) return;
+                const text = generatePlainTextReport(activeScan);
+                navigator.clipboard.writeText(text).then(() => {
+                    copyReportText.textContent = 'Copied!';
+                    setTimeout(() => { copyReportText.textContent = 'Copy Report'; }, 2000);
+                }).catch(err => {
+                    console.error('Clipboard copy failed:', err);
+                });
+            });
+        }
+
+        function downloadFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function generatePlainTextReport(scan) {
+            return `=====================================================
+PHISHDETECT AI - THREAT ANALYSIS REPORT
+=====================================================
+Scan ID: ${scan.id || 'N/A'}
+Date: ${scan.created_at || new Date().toISOString()}
+Sender: ${scan.sender || 'Unknown'}
+Subject: ${scan.subject || 'No Subject'}
+
+OVERALL RISK ASSESSMENT:
+Risk Score: ${scan.risk_score ?? scan.score ?? 0} / 100
+Severity Category: ${scan.category || 'UNKNOWN'}
+Rule Score: ${scan.rule_score ?? 0} / 60
+AI Score: ${scan.ai_score ?? 0} / 40
+AI Verdict: ${scan.ai_verdict || 'N/A'} (Confidence: ${Math.round((scan.ai_confidence || 0.9) * 100)}%)
+
+FINDINGS / INDICATORS:
+${(scan.findings || []).map(f => `- [${f.indicator_type || f.type}] (+${f.points || 0} pts): ${f.description || ''}`).join('\n') || 'None detected.'}
+
+AI REASONING:
+${(scan.ai_reasons || []).map(r => `- ${r}`).join('\n') || 'Standard analysis.'}
+
+RECOMMENDATIONS:
+${(scan.recommended_actions || generateDefaultRecommendations(scan.risk_score || 0)).map((r, i) => `${i+1}. ${r}`).join('\n')}
+
+DISCLAIMER:
+This AI-generated assessment is advisory and does not guarantee that an email is safe or malicious.
+=====================================================`;
+        }
+    });
+</script>
+{% endblock %}

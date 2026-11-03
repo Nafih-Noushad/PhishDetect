@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+
+{% block title %}Analyze Email - PhishDetect AI{% endblock %}
+{% block page_title %}Analyze Email{% endblock %}
+{% block page_subtitle %}Submit an email for phishing detection & AI threat inspection{% endblock %}
+
+{% block content %}
+<div class="analyze-container">
+    <!-- Horizontal Stepper (Active during analysis) -->
+    <div class="analysis-stepper-wrapper" id="analysis-stepper" style="display: none;">
+        <div class="stepper-card card card-glow-cyan">
+            <div class="stepper-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <div class="pulse-radar-dot"></div>
+                    <span class="stepper-status-title" id="stepper-status-text">Initializing Email Analysis Engine...</span>
+                </div>
+                <span class="stepper-percent font-mono text-cyan" id="stepper-percentage">15%</span>
+            </div>
+
+            <div class="stepper-progress-bar">
+                <div class="stepper-progress-fill" id="stepper-progress-fill"></div>
+            </div>
+
+            <div class="stepper-steps-grid">
+                <div class="stepper-step active" id="step-1">
+                    <div class="step-circle">
+                        <i data-lucide="file-input"></i>
+                    </div>
+                    <div class="step-label">Prepare</div>
+                    <div class="step-sub">Sanitizing payload</div>
+                </div>
+
+                <div class="stepper-connector" id="connector-1"></div>
+
+                <div class="stepper-step" id="step-2">
+                    <div class="step-circle">
+                        <i data-lucide="check-square"></i>
+                    </div>
+                    <div class="step-label">Rule Analysis</div>
+                    <div class="step-sub">Heuristic 5-vector check</div>
+                </div>
+
+                <div class="stepper-connector" id="connector-2"></div>
+
+                <div class="stepper-step" id="step-3">
+                    <div class="step-circle">
+                        <i data-lucide="cpu"></i>
+                    </div>
+                    <div class="step-label">AI Scan</div>
+                    <div class="step-sub">Ollama LLM inference</div>
+                </div>
+
+                <div class="stepper-connector" id="connector-3"></div>
+
+                <div class="stepper-step" id="step-4">
+                    <div class="step-circle">
+                        <i data-lucide="gauge"></i>
+                    </div>
+                    <div class="step-label">Score</div>
+                    <div class="step-sub">Weighting &amp; aggregation</div>
+                </div>
+
+                <div class="stepper-connector" id="connector-4"></div>
+
+                <div class="stepper-step" id="step-5">
+                    <div class="step-circle">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <div class="step-label">Complete</div>
+                    <div class="step-sub">Compiling report</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Analysis Submission Card -->
+    <div class="card card-glow-cyan form-card-centered" id="form-container">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="mail-search" class="text-cyan"></i>
+                <h2 class="card-title">Email Payload Submission</h2>
+            </div>
+            <!-- Quick Preload Sample Buttons -->
+            <div class="sample-actions flex gap-2">
+                <button type="button" class="btn btn-secondary btn-sm" id="try-phishing" title="Load sample phishing email">
+                    <i data-lucide="alert-triangle" class="text-danger"></i>
+                    <span>Try Phishing Example</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="try-legit" title="Load sample legitimate email">
+                    <i data-lucide="check-circle" class="text-success"></i>
+                    <span>Try Legit Example</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <form id="email-form" method="POST" action="javascript:void(0);">
+                <!-- Sender Field -->
+                <div class="form-group">
+                    <label class="form-label" for="sender-input">
+                        <span class="flex-align-center gap-1">
+                            <i data-lucide="at-sign" class="form-label-icon text-cyan"></i>
+                            Sender Email Address
+                        </span>
+                        <span class="text-muted text-xs">Envelope / Header From</span>
+                    </label>
+                    <div class="input-with-icon">
+                        <i data-lucide="mail" class="input-inner-icon"></i>
+                        <input 
+                            type="email" 
+                            id="sender-input" 
+                            name="sender" 
+                            class="form-control" 
+                            placeholder="security-alert@service-verification-update.com" 
+                            maxlength="500" 
+                            required
+                        >
+                    </div>
+                    <div class="form-hint">Provide the sender's email address as shown in the email header or 'From:' field.</div>
+                </div>
+
+                <!-- Subject Field -->
+                <div class="form-group">
+                    <label class="form-label" for="subject-input">
+                        <span class="flex-align-center gap-1">
+                            <i data-lucide="heading" class="form-label-icon text-cyan"></i>
+                            Subject Line
+                        </span>
+                        <span class="text-muted text-xs">Email Header Subject</span>
+                    </label>
+                    <div class="input-with-icon">
+                        <i data-lucide="file-text" class="input-inner-icon"></i>
+                        <input 
+                            type="text" 
+                            id="subject-input" 
+                            name="subject" 
+                            class="form-control" 
+                            placeholder="URGENT: Your Account Has Been Suspended - Action Required within 24 Hours" 
+                            maxlength="1000" 
+                            required
+                        >
+                    </div>
+                </div>
+
+                <!-- Body Field -->
+                <div class="form-group">
+                    <div class="flex-between mb-1">
+                        <label class="form-label mb-0" for="body-input">
+                            <span class="flex-align-center gap-1">
+                                <i data-lucide="align-left" class="form-label-icon text-cyan"></i>
+                                Email Body Content
+                            </span>
+                        </label>
+                        <span class="char-counter font-mono text-xs text-muted" id="body-counter">0 / 50,000 characters</span>
+                    </div>
+                    <textarea 
+                        id="body-input" 
+                        name="body" 
+                        class="form-control font-mono-textarea" 
+                        rows="12" 
+                        placeholder="Paste the raw text or full HTML email content here, including any embedded URLs, greeting, signatures, and warning notices..." 
+                        maxlength="50000" 
+                        required
+                    ></textarea>
+                    <div class="form-hint">Tip: Include full link URLs (e.g. https://...) for maximum detection accuracy by our domain reputation filter.</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-actions flex-between mt-4">
+                    <button type="button" class="btn btn-secondary" id="clear-btn">
+                        <i data-lucide="rotate-ccw"></i>
+                        <span>Clear Form</span>
+                    </button>
+
+                    <button type="submit" class="btn btn-primary btn-lg" id="analyze-btn">
+                        <i data-lucide="shield-check"></i>
+                        <span>Analyze Email</span>
+                        <div class="spinner" id="analyze-spinner" style="display: none;"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Detection Rules Explanatory Info Card -->
+    <div class="card detection-rules-info-card">
+        <div class="card-header">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="info" class="text-blue"></i>
+                <h3 class="card-title text-sm">How PhishDetect AI Inspects Your Payload</h3>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="rules-explanation-grid">
+                <div class="rule-box">
+                    <div class="rule-icon-circle icon-red">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <div class="rule-box-content">
+                        <h4 class="rule-box-title">1. Urgency &amp; Threats</h4>
+                        <p class="rule-box-desc">Detects artificial psychological deadlines, account termination ultimatums, and fear triggers.</p>
+                    </div>
+                </div>
+
+                <div class="rule-box">
+                    <div class="rule-icon-circle icon-orange">
+                        <i data-lucide="link-2"></i>
+                    </div>
+                    <div class="rule-box-content">
+                        <h4 class="rule-box-title">2. Suspicious Links</h4>
+                        <p class="rule-box-desc">Unmasks IP-based URLs, typosquatting domains, disguised hyperlinks, and abnormal TLD extensions.</p>
+                    </div>
+                </div>
+
+                <div class="rule-box">
+                    <div class="rule-icon-circle icon-yellow">
+                        <i data-lucide="key-round"></i>
+                    </div>
+                    <div class="rule-box-content">
+                        <h4 class="rule-box-title">3. Credential Harvesting</h4>
+                        <p class="rule-box-desc">Identifies deceptive requests for passwords, SSNs, 2FA verification codes, and secret tokens.</p>
+                    </div>
+                </div>
+
+                <div class="rule-box">
+                    <div class="rule-icon-circle icon-purple">
+                        <i data-lucide="credit-card"></i>
+                    </div>
+                    <div class="rule-box-content">
+                        <h4 class="rule-box-title">4. Financial Solicitations</h4>
+                        <p class="rule-box-desc">Flags suspicious invoice notifications, wire transfer requests, and unusual crypto payment instructions.</p>
+                    </div>
+                </div>
+
+                <div class="rule-box">
+                    <div class="rule-icon-circle icon-cyan">
+                        <i data-lucide="sliders-horizontal"></i>
+                    </div>
+                    <div class="rule-box-content">
+                        <h4 class="rule-box-title">5. Technical Anomalies</h4>
+                        <p class="rule-box-desc">Audits header discrepancies, mismatched sender/reply domains, and generic impersonal greetings.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="analyze-disclaimer-box">
+                <i data-lucide="alert-circle" class="disclaimer-icon text-muted"></i>
+                <p class="disclaimer-text text-muted text-xs">
+                    <strong>Advisory Notice:</strong> This AI-generated assessment is advisory only. PhishDetect AI employs heuristic statistical modeling and local neural inferences. Always practice defense-in-depth and follow your organization's verified security response protocols before opening unverified attachments.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Reference External Analysis Script -->
+<script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
+
+<!-- Embedded Controller for Analysis Form and Stepper Progression -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    const emailForm = document.getElementById('email-form');
+    const senderInput = document.getElementById('sender-input');
+    const subjectInput = document.getElementById('subject-input');
+    const bodyInput = document.getElementById('body-input');
+    const bodyCounter = document.getElementById('body-counter');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const analyzeSpinner = document.getElementById('analyze-spinner');
+    const clearBtn = document.getElementById('clear-btn');
+    const tryPhishingBtn = document.getElementById('try-phishing');
+    const tryLegitBtn = document.getElementById('try-legit');
+    const stepper = document.getElementById('analysis-stepper');
+    const formCard = document.getElementById('form-container');
+
+    // 1. Character Counter
+    function updateCounter() {
+        const len = bodyInput.value.length;
+        bodyCounter.textContent = `${len.toLocaleString()} / 50,000 characters`;
+        if (len > 45000) {
+            bodyCounter.classList.add('text-danger');
+        } else {
+            bodyCounter.classList.remove('text-danger');
+        }
+    }
+    bodyInput.addEventListener('input', updateCounter);
+
+    // 2. Sample Payloads
+    const SAMPLES = {
+        phishing: {
+            sender: "security-noreply@account-verification-support.com",
+            subject: "URGENT: Suspicious Sign-In Detected - Account Suspension in 24 Hours",
+            body: `Dear Valued Customer,
+
+We detected unauthorized sign-in attempts on your account from an unrecognized IP address (185.220.101.5) located in Moscow, Russia.
+
+Due to security policy violations, your account has been temporarily restricted. You must verify your identity immediately to prevent permanent account suspension.
+
+Failure to complete account verification within 24 HOURS will result in total loss of access and forfeiture of pending transactions.
+
+Please click the secure link below to confirm your login credentials and update your security questions:
+http://192.168.1.105:8080/secure/login-update-credentials.php?token=98f828a2b3749e
+
+Do not ignore this message. Your immediate attention is required to safeguard your assets.
+
+Sincerely,
+Global Security & Risk Operations
+Security Reference ID: #SEC-98234-ALERT`
+        },
+        legit: {
+            sender: "notifications@github.com",
+            subject: "[PhishDetect/core] Pull Request #42: Enhance local Ollama prompt schema",
+            body: `Hi Alex,
+
+Sarah Jenkins has submitted a pull request for review on PhishDetect/core:
+PR #42: "Refactor JSON extraction fallback and improve prompt system instructions"
+
+Summary of changes:
+- Adds retry logic for streaming Ollama responses
+- Updates requirements.txt with tested dependencies
+- Adds unit tests for the 5 heuristic rule validators
+
+You can review the diff and approve changes on GitHub:
+https://github.com/PhishDetect/core/pull/42
+
+Reply to this email to leave a comment on the thread.
+
+Best regards,
+The GitHub Team
+GitHub, Inc. • 88 Colin P Kelly Jr St, San Francisco, CA 94107`
+        }
+    };
+
+    tryPhishingBtn.addEventListener('click', () => {
+        senderInput.value = SAMPLES.phishing.sender;
+        subjectInput.value = SAMPLES.phishing.subject;
+        bodyInput.value = SAMPLES.phishing.body;
+        updateCounter();
+        subjectInput.focus();
+    });
+
+    tryLegitBtn.addEventListener('click', () => {
+        senderInput.value = SAMPLES.legit.sender;
+        subjectInput.value = SAMPLES.legit.subject;
+        bodyInput.value = SAMPLES.legit.body;
+        updateCounter();
+        subjectInput.focus();
+    });
+
+    clearBtn.addEventListener('click', () => {
+        senderInput.value = '';
+        subjectInput.value = '';
+        bodyInput.value = '';
+        updateCounter();
+        senderInput.focus();
+    });
+
+    // 3. Stepper Simulation & Progress Updater
+    function setStepProgress(stepNum, percent, statusText) {
+        const fill = document.getElementById('stepper-progress-fill');
+        const percentEl = document.getElementById('stepper-percentage');
+        const statusEl = document.getElementById('stepper-status-text');
+
+        if (fill) fill.style.width = `${percent}%`;
+        if (percentEl) percentEl.textContent = `${percent}%`;
+        if (statusEl) statusEl.textContent = statusText;
+
+        for (let i = 1; i <= 5; i++) {
+            const stepEl = document.getElementById(`step-${i}`);
+            const connEl = document.getElementById(`connector-${i}`);
+
+            if (stepEl) {
+                if (i < stepNum) {
+                    stepEl.className = 'stepper-step completed';
+                } else if (i === stepNum) {
+                    stepEl.className = 'stepper-step active';
+                } else {
+                    stepEl.className = 'stepper-step';
+                }
+            }
+
+            if (connEl) {
+                if (i < stepNum) {
+                    connEl.classList.add('completed');
+                } else {
+                    connEl.classList.remove('completed');
+                }
+            }
+        }
+    }
+
+    // 4. Form Submit Handler
+    emailForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const sender = senderInput.value.trim();
+        const subject = subjectInput.value.trim();
+        const body = bodyInput.value.trim();
+
+        if (!sender || !subject || !body) {
+            alert('Please fill in all email fields (sender, subject, and body) before scanning.');
+            return;
+        }
+
+        // Lock form & reveal stepper
+        analyzeBtn.disabled = true;
+        if (analyzeSpinner) analyzeSpinner.style.display = 'inline-block';
+        stepper.style.display = 'block';
+        stepper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setStepProgress(1, 15, 'Sanitizing email headers and parsing content...');
+
+        // Step progression timers for visual feedback
+        const timer1 = setTimeout(() => {
+            setStepProgress(2, 40, 'Executing heuristic rule evaluations (5-factor checks)...');
+        }, 600);
+
+        const timer2 = setTimeout(() => {
+            setStepProgress(3, 75, 'Interfacing with Ollama AI model for neural risk scoring...');
+        }, 1400);
+
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ sender, subject, body })
+            });
+
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || errData.message || `HTTP ${response.status}: Failed to analyze email`);
+            }
+
+            const result = await response.json();
+            const scanId = result.id || result.scan_id || (result.scan && result.scan.id);
+
+            setStepProgress(4, 90, 'Aggregating heuristic markers and synthesizing risk gauge...');
+
+            setTimeout(() => {
+                setStepProgress(5, 100, 'Scan completed! Generating comprehensive threat report...');
+                setTimeout(() => {
+                    if (scanId) {
+                        window.location.href = `/results/${scanId}`;
+                    } else {
+                        // Fallback in case ID is not returned
+                        window.location.href = '/dashboard';
+                    }
+                }, 400);
+            }, 500);
+
+        } catch (error) {
+            console.error('Analysis error:', error);
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+            stepper.style.display = 'none';
+            analyzeBtn.disabled = false;
+            if (analyzeSpinner) analyzeSpinner.style.display = 'none';
+            alert(`Analysis encountered an error: ${error.message}\nPlease check Ollama connection in Settings.`);
+        }
+    });
+});
+</script>
+{% endblock %}

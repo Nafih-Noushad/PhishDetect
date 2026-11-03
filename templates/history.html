@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+
+{% block title %}Scan History - PhishDetect AI{% endblock %}
+{% block page_title %}Scan History{% endblock %}
+{% block page_subtitle %}Audit trail of previously analyzed email payloads & threat records{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <!-- Controls Filter Bar -->
+    <div class="card history-controls-card mb-4">
+        <div class="card-body">
+            <div class="controls-row flex-between flex-wrap gap-3">
+                <!-- Search Box -->
+                <div class="search-input-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        class="form-control search-input" 
+                        placeholder="Search by sender or subject..."
+                        autocomplete="off"
+                    >
+                </div>
+
+                <!-- Filters & Actions -->
+                <div class="filters-group flex-align-center gap-2 flex-wrap">
+                    <!-- Category Filter -->
+                    <div class="filter-item">
+                        <label for="category-filter" class="filter-label text-muted text-xs">Category:</label>
+                        <select id="category-filter" class="form-control select-control">
+                            <option value="ALL">All Categories</option>
+                            <option value="LOW">Safe (LOW)</option>
+                            <option value="MEDIUM">Suspicious (MEDIUM)</option>
+                            <option value="HIGH">Phishing (HIGH)</option>
+                            <option value="CRITICAL">Critical (CRITICAL)</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort Order -->
+                    <div class="filter-item">
+                        <label for="sort-select" class="filter-label text-muted text-xs">Sort By:</label>
+                        <select id="sort-select" class="form-control select-control">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="highest_risk">Highest Risk</option>
+                            <option value="lowest_risk">Lowest Risk</option>
+                        </select>
+                    </div>
+
+                    <!-- Clear All Logs Action -->
+                    <button type="button" class="btn btn-danger btn-sm" id="clear-all-btn" title="Purge all scan logs from database">
+                        <i data-lucide="trash-2"></i>
+                        <span>Clear All</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Table Card -->
+    <div class="card history-table-card">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="database" class="text-cyan"></i>
+                <h3 class="card-title">Analysis Log Records</h3>
+            </div>
+            <div class="history-meta text-muted text-sm" id="history-count-badge">
+                Showing 0 records
+            </div>
+        </div>
+
+        <div class="card-body no-padding">
+            <!-- Table Wrapper -->
+            <div class="table-wrapper" id="history-table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 160px;">Date/Time</th>
+                            <th>Sender</th>
+                            <th>Subject</th>
+                            <th style="width: 100px;">Score</th>
+                            <th style="width: 120px;">Category</th>
+                            <th style="width: 130px;">AI Verdict</th>
+                            <th style="width: 140px;" class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Filled by loadHistory() -->
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="inline-spinner"></div> Loading scan history...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State Container -->
+            <div class="empty-state-container" id="empty-state" style="display: none;">
+                <div class="empty-icon-wrap">
+                    <i data-lucide="shield-off"></i>
+                </div>
+                <h4 class="empty-title">No Scans Found</h4>
+                <p class="empty-desc text-muted" id="empty-state-desc">
+                    No scan records match your filter criteria or the history is empty.
+                </p>
+                <a href="{{ url_for('main.analyze_page') }}" class="btn btn-primary btn-sm mt-3">
+                    <i data-lucide="plus-circle"></i>
+                    <span>Analyze An Email Now</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="card-footer pagination-footer flex-between" id="pagination-container">
+            <div class="pagination-info text-muted text-sm" id="pagination-info">
+                Page 1 of 1
+            </div>
+            <div class="pagination-buttons flex-align-center gap-1" id="pagination-buttons">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clear All Confirmation Modal -->
+<div class="modal-backdrop" id="clear-modal" style="display: none;">
+    <div class="modal-box card card-glow-red">
+        <div class="modal-header flex-align-center gap-2">
+            <i data-lucide="alert-triangle" class="text-danger"></i>
+            <h3 class="modal-title">Purge Entire Scan History?</h3>
+        </div>
+        <div class="modal-body py-3">
+            <p class="text-muted">
+                This action will permanently delete all recorded scan logs, heuristic telemetry, and AI findings from the database. This operation cannot be reversed.
+            </p>
+        </div>
+        <div class="modal-footer flex-between">
+            <button type="button" class="btn btn-secondary" id="cancel-clear-btn">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirm-clear-btn">
+                <i data-lucide="trash-2"></i>
+                <span>Yes, Purge History</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Main Static JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script>
+// State Management for History View
+let allScans = [];
+let filteredScans = [];
+let currentPage = 1;
+const pageSize = 10;
+
+// Primary History Loader
+async function loadHistory() {
+    const tableBody = document.getElementById('history-table-body');
+    const emptyState = document.getElementById('empty-state');
+    const tableWrapper = document.getElementById('history-table-wrapper');
+    const paginationContainer = document.getElementById('pagination-container');
+
+    try {
+        const response = await fetch('/api/history');
+        if (!response.ok) throw new Error('Failed to retrieve history');
+        const data = await response.json();
+
+        allScans = data.scans || data.history || (Array.isArray(data) ? data : []);
+        applyFiltersAndRender();
+
+    } catch (err) {
+        console.error('History load error:', err);
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        No scan records found in local database.
+                    </td>
+                </tr>
+            `;
+        }
+        if (emptyState) emptyState.style.display = 'block';
+    }
+}
+
+// Filter, Sort, and Paginate
+function applyFiltersAndRender() {
+    const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
+    const sortSelect = document.getElementById('sort-select');
+
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const selectedCat = categoryFilter ? categoryFilter.value : 'ALL';
+    const selectedSort = sortSelect ? sortSelect.value : 'newest';
+
+    // 1. Filter
+    filteredScans = allScans.filter(scan => {
+        const sender = (scan.sender || '').toLowerCase();
+        const subject = (scan.subject || '').toLowerCase();
+        const matchesQuery = !query || sender.includes(query) || subject.includes(query);
+
+        const cat = (scan.category || calculateCategory(scan.risk_score || scan.score || 0)).toUpperCase();
+        const matchesCat = selectedCat === 'ALL' || cat === selectedCat;
+
+        return matchesQuery && matchesCat;
+    });
+
+    // 2. Sort
+    filteredScans.sort((a, b) => {
+        const scoreA = a.risk_score ?? a.score ?? 0;
+        const scoreB = b.risk_score ?? b.score ?? 0;
+        const timeA = new Date(a.created_at || 0).getTime();
+        const timeB = new Date(b.created_at || 0).getTime();
+
+        if (selectedSort === 'oldest') return timeA - timeB;
+        if (selectedSort === 'highest_risk') return scoreB - scoreA;
+        if (selectedSort === 'lowest_risk') return scoreA - scoreB;
+        return timeB - timeA; // default: newest
+    });
+
+    currentPage = 1;
+    renderCurrentPage();
+}
+
+function renderCurrentPage() {
+    const tableBody = document.getElementById('history-table-body');
+    const emptyState = document.getElementById('empty-state');
+    const tableWrapper = document.getElementById('history-table-wrapper');
+    const paginationContainer = document.getElementById('pagination-container');
+    const countBadge = document.getElementById('history-count-badge');
+
+    const total = filteredScans.length;
+    if (countBadge) {
+        countBadge.textContent = `Showing ${total} record${total === 1 ? '' : 's'}`;
+    }
+
+    if (total === 0) {
+        tableBody.innerHTML = '';
+        tableWrapper.style.display = 'none';
+        emptyState.style.display = 'block';
+        paginationContainer.style.display = 'none';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+
+    tableWrapper.style.display = 'block';
+    emptyState.style.display = 'none';
+    paginationContainer.style.display = 'flex';
+
+    const totalPages = Math.ceil(total / pageSize);
+    if (currentPage > totalPages) currentPage = totalPages;
+    const startIndex = (currentPage - 1) * pageSize;
+    const pageItems = filteredScans.slice(startIndex, startIndex + pageSize);
+
+    tableBody.innerHTML = '';
+
+    pageItems.forEach((scan, idx) => {
+        const tr = document.createElement('tr');
+        const rowNum = startIndex + idx + 1;
+        const score = scan.risk_score ?? scan.score ?? 0;
+        const cat = (scan.category || calculateCategory(score)).toUpperCase();
+
+        let badgeClass = 'badge-low';
+        let scoreColor = '#10b981';
+        if (cat === 'CRITICAL' || score >= 75) {
+            badgeClass = 'badge-critical';
+            scoreColor = '#ef4444';
+        } else if (cat === 'HIGH' || score >= 50) {
+            badgeClass = 'badge-high';
+            scoreColor = '#f97316';
+        } else if (cat === 'MEDIUM' || score >= 25) {
+            badgeClass = 'badge-medium';
+            scoreColor = '#eab308';
+        }
+
+        const aiVerdict = (scan.ai_verdict || (score >= 50 ? 'PHISHING' : 'LEGITIMATE')).toUpperCase();
+        let verdictBadgeClass = aiVerdict === 'PHISHING' ? 'badge-critical' : (aiVerdict === 'SUSPICIOUS' ? 'badge-medium' : 'badge-low');
+
+        const dateStr = scan.created_at ? new Date(scan.created_at).toLocaleString([], {
+            month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) : 'Just now';
+
+        const senderSafe = escapeHtml(scan.sender || 'Unknown');
+        const subjectSafe = escapeHtml(scan.subject || 'No Subject');
+
+        tr.innerHTML = `
+            <td class="font-mono text-muted text-xs">${rowNum}</td>
+            <td class="font-mono text-muted text-xs">${dateStr}</td>
+            <td class="font-medium text-truncate" style="max-width: 180px;" title="${senderSafe}">${senderSafe}</td>
+            <td class="text-truncate" style="max-width: 260px;" title="${subjectSafe}">
+                <a href="/results/${scan.id}" class="table-subject-link">${subjectSafe}</a>
+            </td>
+            <td>
+                <span class="font-mono font-bold" style="color: ${scoreColor};">${score}</span>
+                <span class="text-muted text-xs">/100</span>
+            </td>
+            <td><span class="badge ${badgeClass}">${cat}</span></td>
+            <td><span class="badge ${verdictBadgeClass} badge-subtle">${aiVerdict}</span></td>
+            <td class="text-right">
+                <div class="flex-align-center justify-end gap-1">
+                    <a href="/results/${scan.id}" class="btn btn-secondary btn-xs" title="View Report">
+                        <i data-lucide="eye"></i>
+                    </a>
+                    <button type="button" class="btn btn-danger btn-xs" title="Delete Scan" onclick="deleteSingleScan(${scan.id})">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    renderPagination(totalPages);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function renderPagination(totalPages) {
+    const info = document.getElementById('pagination-info');
+    const buttons = document.getElementById('pagination-buttons');
+
+    if (info) {
+        info.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+    }
+
+    if (!buttons) return;
+    buttons.innerHTML = '';
+
+    // Prev Button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = `btn btn-secondary btn-xs ${currentPage === 1 ? 'disabled' : ''}`;
+    prevBtn.innerHTML = '<i data-lucide="chevron-left"></i>';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderCurrentPage();
+        }
+    });
+    buttons.appendChild(prevBtn);
+
+    // Number Buttons
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            const pageBtn = document.createElement('button');
+            pageBtn.className = `btn btn-xs ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
+            pageBtn.textContent = i;
+            pageBtn.addEventListener('click', () => {
+                currentPage = i;
+                renderCurrentPage();
+            });
+            buttons.appendChild(pageBtn);
+        } else if (i === currentPage - 2 || i === currentPage + 2) {
+            const dots = document.createElement('span');
+            dots.className = 'pagination-dots text-muted text-xs px-1';
+            dots.textContent = '...';
+            buttons.appendChild(dots);
+        }
+    }
+
+    // Next Button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = `btn btn-secondary btn-xs ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextBtn.innerHTML = '<i data-lucide="chevron-right"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderCurrentPage();
+        }
+    });
+    buttons.appendChild(nextBtn);
+}
+
+// Delete Single Scan Action
+async function deleteSingleScan(id) {
+    if (!confirm(`Are you sure you want to delete scan #${id}?`)) return;
+
+    try {
+        const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete scan record');
+
+        allScans = allScans.filter(s => s.id !== id);
+        applyFiltersAndRender();
+    } catch (err) {
+        alert(`Error deleting record: ${err.message}`);
+    }
+}
+
+// Clear All Scans Modal Logic
+const clearModal = document.getElementById('clear-modal');
+const clearAllBtn = document.getElementById('clear-all-btn');
+const cancelClearBtn = document.getElementById('cancel-clear-btn');
+const confirmClearBtn = document.getElementById('confirm-clear-btn');
+
+if (clearAllBtn && clearModal) {
+    clearAllBtn.addEventListener('click', () => {
+        clearModal.style.display = 'flex';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+}
+
+if (cancelClearBtn && clearModal) {
+    cancelClearBtn.addEventListener('click', () => {
+        clearModal.style.display = 'none';
+    });
+}
+
+if (confirmClearBtn && clearModal) {
+    confirmClearBtn.addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/history', { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to purge history');
+
+            clearModal.style.display = 'none';
+            allScans = [];
+            applyFiltersAndRender();
+        } catch (err) {
+            alert(`Error clearing history: ${err.message}`);
+        }
+    });
+}
+
+function calculateCategory(score) {
+    if (score >= 75) return 'CRITICAL';
+    if (score >= 50) return 'HIGH';
+    if (score >= 25) return 'MEDIUM';
+    return 'LOW';
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Initializing hooks
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
+    const sortSelect = document.getElementById('sort-select');
+
+    if (searchInput) searchInput.addEventListener('input', applyFiltersAndRender);
+    if (categoryFilter) categoryFilter.addEventListener('change', applyFiltersAndRender);
+    if (sortSelect) sortSelect.addEventListener('change', applyFiltersAndRender);
+
+    loadHistory();
+});
+</script>
+{% endblock %}

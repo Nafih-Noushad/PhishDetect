@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+
+{% block title %}About - PhishDetect AI{% endblock %}
+{% block page_title %}About PhishDetect AI{% endblock %}
+{% block page_subtitle %}Understanding architecture, heuristic detection models, and neural threat analysis{% endblock %}
+
+{% block content %}
+<div class="about-container">
+    <!-- Hero Section -->
+    <div class="card card-glow-cyan about-hero-card text-center py-5 mb-4">
+        <div class="hero-icon-container mb-3">
+            <div class="hero-shield-glow">
+                <i data-lucide="shield-check" class="hero-shield-icon"></i>
+            </div>
+        </div>
+        <h1 class="hero-title gradient-text font-bold mb-2">PhishDetect AI</h1>
+        <p class="hero-subtitle text-muted max-w-600 mx-auto">
+            Advanced AI-Powered Phishing Email Detection &amp; Dual-Engine Threat Intelligence System
+        </p>
+        <div class="hero-tags flex-center gap-2 mt-3 flex-wrap">
+            <span class="badge badge-low">Heuristic Engine</span>
+            <span class="badge badge-medium">Ollama Neural LLM</span>
+            <span class="badge badge-high">60/40 Hybrid Scoring</span>
+            <span class="badge badge-subtle">Academic Capstone 2026</span>
+        </div>
+    </div>
+
+    <!-- Section 1: What is Phishing? Card -->
+    <div class="card card-glow-blue mb-4">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="alert-octagon" class="text-blue"></i>
+                <h3 class="card-title">What is Phishing?</h3>
+            </div>
+            <span class="card-tag text-muted">Threat Landscape</span>
+        </div>
+        <div class="card-body">
+            <p class="text-body mb-4">
+                Phishing is a social engineering attack where malicious actors impersonate trusted organizations (banks, cloud providers, corporate IT departments) to trick recipients into surrendering confidential credentials, downloading malware, or authorizing fraudulent financial transfers.
+            </p>
+
+            <div class="stats-grid stats-mini-grid">
+                <div class="stat-mini-card">
+                    <div class="stat-mini-num font-mono text-cyan">3.4B</div>
+                    <div class="stat-mini-label text-muted text-xs">Spam &amp; Phishing Emails Sent Daily Globally</div>
+                </div>
+                <div class="stat-mini-card">
+                    <div class="stat-mini-num font-mono text-danger">90%</div>
+                    <div class="stat-mini-label text-muted text-xs">Of Enterprise Cybersecurity Breaches Involve Phishing</div>
+                </div>
+                <div class="stat-mini-card">
+                    <div class="stat-mini-num font-mono text-purple">$4.9M</div>
+                    <div class="stat-mini-label text-muted text-xs">Average Cost of a Phishing-Initiated Data Breach</div>
+                </div>
+                <div class="stat-mini-card">
+                    <div class="stat-mini-num font-mono text-success">&lt; 3.2s</div>
+                    <div class="stat-mini-label text-muted text-xs">PhishDetect AI Dual Analysis Latency</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: How It Works Section (3-Step Card) -->
+    <div class="card mb-4">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="workflow" class="text-cyan"></i>
+                <h3 class="card-title">How PhishDetect AI Operates: 3-Step Pipeline</h3>
+            </div>
+            <span class="card-tag text-muted">Execution Flow</span>
+        </div>
+        <div class="card-body">
+            <div class="steps-cards-grid">
+                <div class="step-process-card card-glow-cyan">
+                    <div class="step-num-badge">1</div>
+                    <div class="step-process-icon text-cyan">
+                        <i data-lucide="file-input"></i>
+                    </div>
+                    <h4 class="step-process-title">1. Submit Email</h4>
+                    <p class="step-process-desc text-muted text-sm">
+                        The analyst inputs envelope sender addresses, subject headers, and raw email body text or hyperlinks into the inspection gateway.
+                    </p>
+                </div>
+
+                <div class="step-process-card card-glow-blue">
+                    <div class="step-num-badge">2</div>
+                    <div class="step-process-icon text-blue">
+                        <i data-lucide="cpu"></i>
+                    </div>
+                    <h4 class="step-process-title">2. Analysis Engine</h4>
+                    <p class="step-process-desc text-muted text-sm">
+                        The dual pipeline triggers parallel heuristic pattern audits (60 pts) and feeds normalized context into the local Ollama LLM (40 pts).
+                    </p>
+                </div>
+
+                <div class="step-process-card card-glow-purple">
+                    <div class="step-num-badge">3</div>
+                    <div class="step-process-icon text-purple">
+                        <i data-lucide="shield-alert"></i>
+                    </div>
+                    <h4 class="step-process-title">3. Risk Report</h4>
+                    <p class="step-process-desc text-muted text-sm">
+                        Generates a comprehensive 0-100 consolidated risk gauge, isolates exact evidence snippets, and provides actionable defensive directives.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Detection Methods (2 Cards Side by Side) -->
+    <div class="detection-methods-grid mb-4">
+        <!-- Card 1: Rule-Based Detection -->
+        <div class="card card-glow-cyan">
+            <div class="card-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <i data-lucide="list-checks" class="text-cyan"></i>
+                    <h3 class="card-title">1. Rule-Based Heuristic Scanner</h3>
+                </div>
+                <span class="badge badge-low">Up to 60 Pts</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted text-sm mb-3">
+                    High-speed deterministic pattern matcher evaluating emails against 5 distinct threat dimensions:
+                </p>
+                <ul class="method-rules-list">
+                    <li>
+                        <strong class="text-white">Urgency &amp; Psychological Pressure:</strong>
+                        Detects manufactured deadlines (e.g., "account suspended within 24 hours", "immediate action mandatory").
+                    </li>
+                    <li>
+                        <strong class="text-white">Suspicious Links &amp; Domain Spoofing:</strong>
+                        Flags bare IP URLs, lookalike typosquatting domains (e.g., <code>paypa1.com</code>), and abnormal top-level domains (.xyz, .top).
+                    </li>
+                    <li>
+                        <strong class="text-white">Credential Harvesting Vectors:</strong>
+                        Identifies explicit calls to re-authenticate, update master passwords, or disclose 2FA tokens.
+                    </li>
+                    <li>
+                        <strong class="text-white">Financial &amp; Wire Fraud Cues:</strong>
+                        Triggers on unverified invoices, cryptocurrency wallet addresses, and sudden bank account change requests.
+                    </li>
+                    <li>
+                        <strong class="text-white">Header &amp; Greeting Anomalies:</strong>
+                        Highlights mismatched envelope domains and generic impersonations ("Dear Customer", "Undisclosed Recipient").
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Card 2: AI-Powered Analysis (Ollama) -->
+        <div class="card card-glow-purple">
+            <div class="card-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <i data-lucide="sparkles" class="text-purple"></i>
+                    <h3 class="card-title">2. Neural LLM Intelligence (Ollama)</h3>
+                </div>
+                <span class="badge badge-subtle">Up to 40 Pts</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted text-sm mb-3">
+                    Leverages local Large Language Models (such as Llama 3, Mistral, and Phi 3) executed entirely on-premise without cloud data leaks:
+                </p>
+                <ul class="method-rules-list">
+                    <li>
+                        <strong class="text-white">Contextual Semantic Understanding:</strong>
+                        Understands nuanced interpersonal tone, professional spear-phishing contexts, and pretexting scenarios.
+                    </li>
+                    <li>
+                        <strong class="text-white">Evidence Extraction:</strong>
+                        Extracts and isolates the most deceptive sentences directly from the email body.
+                    </li>
+                    <li>
+                        <strong class="text-white">Confidence Scoring:</strong>
+                        Calculates an uncertainty metric based on language consistency and coherence.
+                    </li>
+                    <li>
+                        <strong class="text-white">100% Offline Privacy:</strong>
+                        Emails are never dispatched to third-party APIs. All inference occurs in local GPU/CPU memory via Ollama.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Risk Scoring System Card -->
+    <div class="card card-glow-cyan mb-4">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="gauge" class="text-cyan"></i>
+                <h3 class="card-title">Risk Scoring Matrix (0 - 100)</h3>
+            </div>
+            <span class="font-mono text-cyan text-sm">Rule (60%) + AI (40%) = 100%</span>
+        </div>
+        <div class="card-body">
+            <div class="scoring-bands-grid mb-4">
+                <div class="score-band-card band-low">
+                    <div class="band-range font-mono">0 &ndash; 24</div>
+                    <div class="band-name">LOW RISK</div>
+                    <div class="band-status text-success">Clean / Safe</div>
+                    <p class="band-desc text-muted text-xs">Standard communication with verified headers and normal business tone.</p>
+                </div>
+
+                <div class="score-band-card band-medium">
+                    <div class="band-range font-mono">25 &ndash; 49</div>
+                    <div class="band-name">MEDIUM RISK</div>
+                    <div class="band-status text-yellow">Suspicious / Caution</div>
+                    <p class="band-desc text-muted text-xs">Minor anomalies or mild urgency cues detected. Caution advised.</p>
+                </div>
+
+                <div class="score-band-card band-high">
+                    <div class="band-range font-mono">50 &ndash; 74</div>
+                    <div class="band-name">HIGH RISK</div>
+                    <div class="band-status text-orange">Probable Phishing</div>
+                    <p class="band-desc text-muted text-xs">Strong indicators of deception, spoofed links, or credential targets.</p>
+                </div>
+
+                <div class="score-band-card band-critical">
+                    <div class="band-range font-mono">75 &ndash; 100</div>
+                    <div class="band-name">CRITICAL RISK</div>
+                    <div class="band-status text-danger">Severe Threat</div>
+                    <p class="band-desc text-muted text-xs">High confidence attack vector. Block sender and quarantine immediately.</p>
+                </div>
+            </div>
+
+            <!-- Mathematical Equation Breakdown -->
+            <div class="formula-box text-center p-3 rounded">
+                <span class="text-muted text-sm">Aggregated Threat Formula: </span>
+                <code class="font-mono font-bold text-cyan text-md">
+                    Total_Risk = min(100, Rule_Score[0-60] + AI_Score[0-40])
+                </code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Technology Stack Card -->
+    <div class="card mb-4">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="layers" class="text-blue"></i>
+                <h3 class="card-title">Technology &amp; Architectural Stack</h3>
+            </div>
+            <span class="card-tag text-muted">Core Dependencies</span>
+        </div>
+        <div class="card-body">
+            <div class="tech-stack-grid">
+                <div class="tech-item">
+                    <i data-lucide="terminal" class="tech-icon text-cyan"></i>
+                    <span class="tech-name">Python 3.10+</span>
+                    <span class="tech-desc">Core Language &amp; Regex Heuristics</span>
+                </div>
+
+                <div class="tech-item">
+                    <i data-lucide="server" class="tech-icon text-blue"></i>
+                    <span class="tech-name">Flask 3.0</span>
+                    <span class="tech-desc">REST API &amp; Web Microframework</span>
+                </div>
+
+                <div class="tech-item">
+                    <i data-lucide="database" class="tech-icon text-purple"></i>
+                    <span class="tech-name">SQLite 3</span>
+                    <span class="tech-desc">Persistent Audit &amp; Telemetry Storage</span>
+                </div>
+
+                <div class="tech-item">
+                    <i data-lucide="cpu" class="tech-icon text-green"></i>
+                    <span class="tech-name">Ollama Engine</span>
+                    <span class="tech-desc">Local Neural LLM Inference Engine</span>
+                </div>
+
+                <div class="tech-item">
+                    <i data-lucide="pie-chart" class="tech-icon text-yellow"></i>
+                    <span class="tech-name">Chart.js</span>
+                    <span class="tech-desc">Interactive Threat Telemetry Visuals</span>
+                </div>
+
+                <div class="tech-item">
+                    <i data-lucide="shield" class="tech-icon text-cyan"></i>
+                    <span class="tech-name">Lucide Icons</span>
+                    <span class="tech-desc">Cyber Security UI Vector Iconography</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: Limitations & Disclaimer Card -->
+    <div class="card card-glow-red mb-4">
+        <div class="card-header flex-between">
+            <div class="flex-align-center gap-2">
+                <i data-lucide="alert-triangle" class="text-danger"></i>
+                <h3 class="card-title text-danger">Academic Scope &amp; Limitations</h3>
+            </div>
+            <span class="badge badge-critical">Read Carefully</span>
+        </div>
+        <div class="card-body">
+            <div class="limitations-body text-sm text-muted">
+                <p class="mb-2">
+                    &bull; <strong>Academic Capstone Project:</strong> PhishDetect AI is engineered as a 3rd-year university computer science capstone evaluation system. It is intended for educational, research, and proof-of-concept cybersecurity demonstrations.
+                </p>
+                <p class="mb-2">
+                    &bull; <strong>No Guarantee of Total Accuracy:</strong> While the dual-layer model yields strong heuristic accuracy, modern zero-day attacks and adversarial evasion techniques can circumvent static rules or neural language detectors.
+                </p>
+                <p class="mb-2">
+                    &bull; <strong>Advisory Tool Only:</strong> This application must never be deployed as the sole security boundary for enterprise email gateways. Always employ multi-layered email defenses (SPF, DKIM, DMARC, sandboxing) and human security awareness.
+                </p>
+                <p>
+                    &bull; <strong>Local Hardware Dependence:</strong> Response times of the AI evaluation step depend directly on host machine specifications (CPU/GPU acceleration and available RAM).
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 7: Contact / Project Credits Card -->
+    <div class="card mb-4 text-center py-4">
+        <div class="card-body">
+            <h4 class="font-bold text-white mb-1">Project Credits &amp; Source Code</h4>
+            <p class="text-muted text-sm mb-3">Department of Computer Science &amp; Cybersecurity Engineering &mdash; 3rd Year Project</p>
+            <div class="flex-center gap-3">
+                <a href="https://github.com/PhishDetect/core" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+                    <i data-lucide="github"></i>
+                    <span>GitHub Repository</span>
+                </a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Return to Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+</script>
+{% endblock %}

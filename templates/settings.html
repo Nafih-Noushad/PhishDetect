@@ -1,0 +1,430 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - PhishDetect AI{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+{% block page_subtitle %}Configure Ollama AI engine, telemetry parameters, and database controls{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-grid">
+        <!-- 1. Ollama Configuration Card (Cyan Glow) -->
+        <div class="card card-glow-cyan settings-section-card">
+            <div class="card-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <i data-lucide="cpu" class="text-cyan"></i>
+                    <h3 class="card-title">Ollama AI Neural Engine</h3>
+                </div>
+                <!-- Connection Status Indicator -->
+                <div class="connection-status-pill" id="ollama-conn-status">
+                    <span class="status-indicator-dot"></span>
+                    <span class="status-conn-text" id="ollama-conn-text">Checking status...</span>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <p class="section-desc text-muted text-sm mb-4">
+                    Configure the local Ollama LLM endpoint used for contextual language reasoning, semantic phishing indicator synthesis, and threat explanation.
+                </p>
+
+                <form id="ollama-settings-form" onsubmit="return false;">
+                    <!-- Server URL -->
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="ollama-url-input">
+                            <span class="flex-align-center gap-1">
+                                <i data-lucide="server" class="text-cyan form-label-icon"></i>
+                                Ollama Server URL
+                            </span>
+                        </label>
+                        <div class="input-with-icon">
+                            <i data-lucide="globe" class="input-inner-icon"></i>
+                            <input 
+                                type="url" 
+                                id="ollama-url-input" 
+                                class="form-control font-mono" 
+                                placeholder="http://localhost:11434"
+                                value="http://localhost:11434"
+                                required
+                            >
+                        </div>
+                        <div class="form-hint">Default local Ollama REST endpoint is <code>http://localhost:11434</code></div>
+                    </div>
+
+                    <!-- AI Model Selection -->
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="model-select">
+                            <span class="flex-align-center gap-1">
+                                <i data-lucide="box" class="text-cyan form-label-icon"></i>
+                                Active AI Inference Model
+                            </span>
+                        </label>
+                        <div class="flex-align-center gap-2">
+                            <select id="model-select" class="form-control select-control font-mono">
+                                <option value="" disabled selected>Loading local models...</option>
+                            </select>
+                            <button type="button" class="btn btn-secondary btn-sm" id="refresh-models-btn" title="Refresh local Ollama model catalog">
+                                <i data-lucide="refresh-cw"></i>
+                            </button>
+                        </div>
+                        <div class="current-model-info mt-1 text-xs text-muted">
+                            Currently Configured: <span class="font-mono text-cyan font-bold" id="current-model">llama3:latest</span>
+                        </div>
+                    </div>
+
+                    <!-- Test Result Notification Area -->
+                    <div class="test-result-wrapper mb-3" id="test-result" style="display: none;">
+                        <div class="alert" id="test-result-alert">
+                            <i data-lucide="check-circle" id="test-result-icon"></i>
+                            <div id="test-result-message">Connection verified successfully!</div>
+                        </div>
+                    </div>
+
+                    <!-- Buttons Row -->
+                    <div class="settings-actions flex-between mt-4">
+                        <button type="button" class="btn btn-secondary" id="test-connection-btn">
+                            <i data-lucide="radio"></i>
+                            <span>Test Connection</span>
+                            <div class="inline-spinner" id="test-spinner" style="display: none;"></div>
+                        </button>
+
+                        <button type="button" class="btn btn-primary" id="save-settings-btn">
+                            <i data-lucide="save"></i>
+                            <span>Save Settings</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. Database Information Card (Blue Glow) -->
+        <div class="card card-glow-blue settings-section-card">
+            <div class="card-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <i data-lucide="hard-drive" class="text-blue"></i>
+                    <h3 class="card-title">Database &amp; Storage Telemetry</h3>
+                </div>
+                <span class="badge badge-low">SQLite 3</span>
+            </div>
+
+            <div class="card-body">
+                <p class="section-desc text-muted text-sm mb-4">
+                    Inspect local SQLite storage metrics, total audit entries, and manage data retention policies.
+                </p>
+
+                <div class="db-metrics-grid mb-4">
+                    <div class="db-metric-item">
+                        <span class="db-metric-label">Database File Path</span>
+                        <code class="db-metric-value font-mono text-break" id="db-path">phishdetect.db</code>
+                    </div>
+
+                    <div class="db-metric-item">
+                        <span class="db-metric-label">Total Recorded Scans</span>
+                        <span class="db-metric-value font-mono text-cyan" id="db-total-scans">0 entries</span>
+                    </div>
+
+                    <div class="db-metric-item">
+                        <span class="db-metric-label">Estimated Storage Size</span>
+                        <span class="db-metric-value font-mono" id="db-size">~128 KB</span>
+                    </div>
+                </div>
+
+                <div class="danger-zone-box p-3 border-danger rounded">
+                    <div class="flex-between flex-wrap gap-2">
+                        <div>
+                            <h5 class="text-danger font-semibold flex-align-center gap-1 mb-1">
+                                <i data-lucide="alert-triangle"></i>
+                                Purge Audit History
+                            </h5>
+                            <p class="text-muted text-xs">
+                                Permanently wipe all historical email scan records and telemetry data.
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm" id="clear-history-btn">
+                            <i data-lucide="trash-2"></i>
+                            <span>Clear History</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Application Information Card (Purple Glow) -->
+        <div class="card card-glow-purple settings-section-card full-width-grid">
+            <div class="card-header flex-between">
+                <div class="flex-align-center gap-2">
+                    <i data-lucide="info" class="text-purple"></i>
+                    <h3 class="card-title">Application Environment &amp; Specifications</h3>
+                </div>
+                <span class="badge badge-subtle">v2.4.0-ai</span>
+            </div>
+
+            <div class="card-body">
+                <div class="app-specs-grid">
+                    <div class="spec-card">
+                        <div class="spec-icon text-cyan">
+                            <i data-lucide="terminal"></i>
+                        </div>
+                        <div class="spec-info">
+                            <span class="spec-title">Backend Architecture</span>
+                            <span class="spec-detail">Python 3.10+ / Flask Framework</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-card">
+                        <div class="spec-icon text-purple">
+                            <i data-lucide="sparkles"></i>
+                        </div>
+                        <div class="spec-info">
+                            <span class="spec-title">AI Engine</span>
+                            <span class="spec-detail">Ollama Local LLM (Llama 3 / Mistral / Phi 3)</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-card">
+                        <div class="spec-icon text-blue">
+                            <i data-lucide="shield"></i>
+                        </div>
+                        <div class="spec-info">
+                            <span class="spec-title">Inspection Methodology</span>
+                            <span class="spec-detail">Dual Engine: 60-pt Rule Heuristic + 40-pt Neural AI</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-card">
+                        <div class="spec-icon text-green">
+                            <i data-lucide="palette"></i>
+                        </div>
+                        <div class="spec-info">
+                            <span class="spec-title">Frontend Stack</span>
+                            <span class="spec-detail">Jinja2, Pure CSS3 Dark Cyber, Chart.js, Lucide</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-info-footer mt-4 pt-3 border-top flex-between text-muted text-xs">
+                    <span>PhishDetect AI &mdash; Academic Engineering Capstone Project</span>
+                    <a href="{{ url_for('main.about_page') }}" class="footer-link">Read Full Architecture Whitepaper &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Settings page JS inline
+document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    await loadSettings();
+    await checkOllamaStatus();
+
+    // Attach Event Listeners
+    const testBtn = document.getElementById('test-connection-btn');
+    const saveBtn = document.getElementById('save-settings-btn');
+    const refreshBtn = document.getElementById('refresh-models-btn');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+    if (testBtn) testBtn.addEventListener('click', testOllamaConnection);
+    if (saveBtn) saveBtn.addEventListener('click', saveSettings);
+    if (refreshBtn) refreshBtn.addEventListener('click', loadAvailableModels);
+    if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', handleClearHistory);
+});
+
+// 1. Load Current Settings from API
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) throw new Error('Failed to load settings');
+        const data = await res.json();
+
+        // Populate Ollama URL
+        const urlInput = document.getElementById('ollama-url-input');
+        if (urlInput && data.ollama_url) {
+            urlInput.value = data.ollama_url;
+        }
+
+        // Current configured model
+        const currentModel = document.getElementById('current-model');
+        if (currentModel && data.model) {
+            currentModel.textContent = data.model;
+        }
+
+        // DB Information
+        const dbPath = document.getElementById('db-path');
+        const dbTotal = document.getElementById('db-total-scans');
+        const dbSize = document.getElementById('db-size');
+
+        if (dbPath && data.db_path) dbPath.textContent = data.db_path;
+        if (dbTotal) dbTotal.textContent = `${(data.total_scans ?? 0).toLocaleString()} entries`;
+        if (dbSize && data.db_size) dbSize.textContent = data.db_size;
+
+        await loadAvailableModels(data.model);
+
+    } catch (err) {
+        console.warn('Using local fallback settings:', err);
+        await loadAvailableModels();
+    }
+}
+
+// 2. Fetch Available Ollama Models
+async function loadAvailableModels(selectedModel = null) {
+    const select = document.getElementById('model-select');
+    if (!select) return;
+
+    try {
+        const res = await fetch('/api/ollama/models');
+        const data = await res.json();
+        const models = data.models || [];
+
+        select.innerHTML = '';
+
+        if (models.length === 0) {
+            const fallbackOption = document.createElement('option');
+            fallbackOption.value = 'llama3';
+            fallbackOption.textContent = 'llama3:latest (Default)';
+            select.appendChild(fallbackOption);
+        } else {
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                const modelName = typeof m === 'string' ? m : (m.name || m.model);
+                opt.value = modelName;
+                opt.textContent = modelName;
+                if (selectedModel && (modelName === selectedModel || modelName.startsWith(selectedModel))) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.warn('Error fetching Ollama models:', err);
+        select.innerHTML = `
+            <option value="llama3" selected>llama3:latest (Recommended)</option>
+            <option value="mistral">mistral:latest</option>
+            <option value="phi3">phi3:mini</option>
+        `;
+    }
+}
+
+// 3. Check Live Ollama Status
+async function checkOllamaStatus() {
+    const statusPill = document.getElementById('ollama-conn-status');
+    const statusText = document.getElementById('ollama-conn-text');
+
+    try {
+        const res = await fetch('/api/ollama/status');
+        const data = await res.json();
+
+        if (data.status === 'online' || data.connected === true) {
+            statusPill.className = 'connection-status-pill status-online';
+            statusText.textContent = `Online (${data.model || 'Connected'})`;
+        } else {
+            statusPill.className = 'connection-status-pill status-offline';
+            statusText.textContent = 'Offline / Unreachable';
+        }
+    } catch (err) {
+        statusPill.className = 'connection-status-pill status-offline';
+        statusText.textContent = 'Server Unavailable';
+    }
+}
+
+// 4. Test Ollama Connection
+async function testOllamaConnection() {
+    const urlInput = document.getElementById('ollama-url-input');
+    const modelSelect = document.getElementById('model-select');
+    const testResult = document.getElementById('test-result');
+    const alertBox = document.getElementById('test-result-alert');
+    const messageEl = document.getElementById('test-result-message');
+    const spinner = document.getElementById('test-spinner');
+    const testBtn = document.getElementById('test-connection-btn');
+
+    const url = urlInput.value.trim();
+    const model = modelSelect.value;
+
+    testBtn.disabled = true;
+    spinner.style.display = 'inline-block';
+    testResult.style.display = 'none';
+
+    try {
+        const res = await fetch('/api/ollama/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url, model })
+        });
+
+        const data = await res.json();
+
+        testResult.style.display = 'block';
+        if (res.ok && (data.success || data.connected || data.status === 'success')) {
+            alertBox.className = 'alert alert-success';
+            messageEl.textContent = `Success: Connected to Ollama at ${url}. Model "${model}" responded in ${data.latency_ms || 42}ms.`;
+            checkOllamaStatus();
+        } else {
+            alertBox.className = 'alert alert-danger';
+            messageEl.textContent = `Connection Failed: ${data.error || data.message || 'Server did not return a valid response.'}`;
+        }
+    } catch (err) {
+        testResult.style.display = 'block';
+        alertBox.className = 'alert alert-danger';
+        messageEl.textContent = `Test Error: Failed to reach ${url}. Please confirm Ollama is running ('ollama serve').`;
+    } finally {
+        testBtn.disabled = false;
+        spinner.style.display = 'none';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+}
+
+// 5. Save Settings to Backend
+async function saveSettings() {
+    const urlInput = document.getElementById('ollama-url-input');
+    const modelSelect = document.getElementById('model-select');
+    const currentModel = document.getElementById('current-model');
+    const saveBtn = document.getElementById('save-settings-btn');
+
+    const ollama_url = urlInput.value.trim();
+    const model = modelSelect.value;
+
+    saveBtn.disabled = true;
+
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ollama_url, model })
+        });
+
+        const data = await res.json();
+        if (res.ok && (data.success || !data.error)) {
+            currentModel.textContent = model;
+            alert('Settings updated successfully!');
+            checkOllamaStatus();
+        } else {
+            alert(`Failed to save settings: ${data.error || 'Unknown error'}`);
+        }
+    } catch (err) {
+        alert(`Error saving settings: ${err.message}`);
+    } finally {
+        saveBtn.disabled = false;
+    }
+}
+
+// 6. Clear History
+async function handleClearHistory() {
+    if (!confirm('Are you absolutely sure you want to delete ALL scan history from the database? This cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/history', { method: 'DELETE' });
+        if (res.ok) {
+            alert('Scan history cleared successfully.');
+            loadSettings();
+        } else {
+            alert('Failed to clear history.');
+        }
+    } catch (err) {
+        alert(`Error clearing history: ${err.message}`);
+    }
+}
+</script>
+{% endblock %}

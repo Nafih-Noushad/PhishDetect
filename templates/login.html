@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - PhishDetect AI</title>
+    
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-card: rgba(15, 23, 42, 0.78);
+            --border-glow: rgba(0, 242, 254, 0.3);
+            --border-dim: rgba(255, 255, 255, 0.1);
+            --cyan-primary: #00f2fe;
+            --cyan-glow: rgba(0, 242, 254, 0.4);
+            --blue-gradient: #4facfe;
+            --purple-accent: #7f00ff;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger-color: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.12);
+            --success-color: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+            padding: 1.5rem;
+        }
+
+        /* Particle Canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Subtle Cyber Grid */
+        .cyber-grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 242, 254, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 254, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Glowing ambient spheres */
+        .ambient-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.35;
+        }
+
+        .glow-1 {
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, #00f2fe 0%, transparent 70%);
+            top: -100px;
+            left: 10%;
+        }
+
+        .glow-2 {
+            width: 420px;
+            height: 420px;
+            background: radial-gradient(circle, #7f00ff 0%, transparent 70%);
+            bottom: -120px;
+            right: 10%;
+        }
+
+        /* Login Card Container */
+        .login-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 430px;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glow);
+            border-radius: 20px;
+            padding: 2.5rem 2.25rem;
+            box-shadow: 
+                0 0 35px rgba(0, 242, 254, 0.12),
+                0 20px 40px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .login-card:hover {
+            border-color: rgba(0, 242, 254, 0.5);
+            box-shadow: 
+                0 0 45px rgba(0, 242, 254, 0.2),
+                0 25px 50px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Animated Laser Scanning Line */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f2fe, #4facfe, #7f00ff, transparent);
+            box-shadow: 0 0 15px #00f2fe, 0 0 8px #7f00ff;
+            animation: scanning 4s ease-in-out infinite alternate;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+
+        @keyframes scanning {
+            0% {
+                top: 0%;
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 0.9;
+            }
+            100% {
+                top: 99%;
+                opacity: 0.3;
+            }
+        }
+
+        /* Brand & Header */
+        .brand-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 68px;
+            height: 68px;
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(127, 0, 255, 0.15));
+            border: 1px solid var(--border-glow);
+            border-radius: 18px;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.25);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            color: var(--cyan-primary);
+            filter: drop-shadow(0 0 8px var(--cyan-glow));
+        }
+
+        .title-text {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.35rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #9d4edd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle-text {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+
+        /* Error Display */
+        .error-alert {
+            display: none;
+            background: var(--danger-bg);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            gap: 0.65rem;
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+            40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
+
+        .error-alert.visible {
+            display: flex;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            color: #cbd5e1;
+            font-size: 0.825rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.02em;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon-left {
+            position: absolute;
+            left: 1rem;
+            color: var(--text-muted);
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(10, 14, 23, 0.7);
+            border: 1px solid var(--border-dim);
+            border-radius: 12px;
+            padding: 0.85rem 1rem 0.85rem 2.75rem;
+            color: var(--text-main);
+            font-size: 0.925rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--cyan-primary);
+            box-shadow: 0 0 16px rgba(0, 242, 254, 0.25);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .form-control:focus + .input-icon-left,
+        .input-group:focus-within .input-icon-left {
+            color: var(--cyan-primary);
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.85rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--cyan-primary);
+        }
+
+        /* Remember Me Row */
+        .form-extras {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            font-size: 0.825rem;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+            color: var(--text-muted);
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 17px;
+            height: 17px;
+            border: 1px solid var(--border-dim);
+            border-radius: 4px;
+            background: rgba(10, 14, 23, 0.7);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .checkbox-container input[type="checkbox"]:checked {
+            background: var(--cyan-primary);
+            border-color: var(--cyan-primary);
+        }
+
+        .checkbox-container input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid #0a0e17;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* Sign In Button */
+        .btn-submit {
+            width: 100%;
+            padding: 0.95rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #7f00ff 100%);
+            color: #050b14;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 20px rgba(0, 242, 254, 0.35);
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 242, 254, 0.5);
+            filter: brightness(1.08);
+        }
+
+        .btn-submit:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(5, 11, 20, 0.3);
+            border-top-color: #050b14;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-submit.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-submit.loading .btn-text {
+            display: none;
+        }
+
+        /* Demo Credentials Hint */
+        .demo-hint-box {
+            margin-top: 1.5rem;
+            background: rgba(0, 242, 254, 0.05);
+            border: 1px dashed rgba(0, 242, 254, 0.25);
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .demo-hint-box:hover {
+            background: rgba(0, 242, 254, 0.1);
+            border-color: var(--cyan-primary);
+            color: var(--text-main);
+        }
+
+        .demo-hint-code {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--cyan-primary);
+            font-weight: 500;
+        }
+
+        .demo-click-badge {
+            background: rgba(0, 242, 254, 0.15);
+            padding: 0.2rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--cyan-primary);
+        }
+
+        /* Footer */
+        .login-footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .login-footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .login-footer a:hover {
+            color: var(--cyan-primary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Dynamic Canvas Particle Background -->
+    <canvas id="bg-canvas"></canvas>
+    <div class="cyber-grid-overlay"></div>
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <!-- Animated Cyber Scanning Beam -->
+            <div class="scan-line"></div>
+
+            <!-- Logo & Brand Header -->
+            <div class="brand-header">
+                <div class="logo-container">
+                    <i data-lucide="shield-check" class="logo-icon"></i>
+                </div>
+                <h1 class="title-text gradient-text">PhishDetect AI</h1>
+                <p class="subtitle-text">AI-Powered Phishing Detection System</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div class="error-alert" id="error-alert">
+                <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+                <span id="error-message">Invalid email or password</span>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" autocomplete="on">
+                <div class="form-group">
+                    <label class="form-label" for="email">Security Analyst Email</label>
+                    <div class="input-group">
+                        <i data-lucide="mail" class="input-icon-left"></i>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            class="form-control" 
+                            placeholder="analyst@phishdetect.ai" 
+                            required 
+                            autofocus
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Authentication Key / Password</label>
+                    <div class="input-group">
+                        <i data-lucide="lock" class="input-icon-left"></i>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-control" 
+                            placeholder="••••••••••••" 
+                            required
+                        >
+                        <button type="button" class="password-toggle-btn" id="password-toggle" title="Toggle password visibility">
+                            <i data-lucide="eye" id="password-toggle-icon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-extras">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="remember-me">
+                        <span>Remember credentials</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submit-btn">
+                    <span class="btn-text">Authenticate & Sign In</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+
+            <!-- Clickable Demo Credentials Hint -->
+            <div class="demo-hint-box" id="demo-credentials-badge" title="Click to autofill credentials">
+                <div>
+                    <span>Demo: </span>
+                    <span class="demo-hint-code">admin@phishdetect.ai / admin123</span>
+                </div>
+                <span class="demo-click-badge">Autofill</span>
+            </div>
+
+            <!-- Copyright Footer -->
+            <div class="login-footer">
+                <p>&copy; 2026 PhishDetect AI Security Labs. Capstone Project.</p>
+                <p style="margin-top: 0.35rem;">Authorized Security Personnel Only.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Particle Background Script & Login Controller -->
+    <script>
+        // Initialize Lucide Icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // 1. Particle Canvas System
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        const particleCount = Math.min(width > 768 ? 55 : 25, 60);
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.7;
+                this.vy = (Math.random() - 0.5) * 0.7;
+                this.radius = Math.random() * 2 + 1;
+                this.color = Math.random() > 0.4 ? 'rgba(0, 242, 254, ' : 'rgba(127, 0, 255, ';
+                this.alpha = Math.random() * 0.5 + 0.2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0) this.x = width;
+                else if (this.x > width) this.x = 0;
+
+                if (this.y < 0) this.y = height;
+                else if (this.y > height) this.y = 0;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color + this.alpha + ')';
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        function renderParticles() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Connect nearby particles with subtle lines
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 130) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(0, 242, 254, ${0.15 * (1 - dist / 130)})`;
+                        ctx.lineWidth = 0.6;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(renderParticles);
+        }
+        renderParticles();
+
+        // 2. Login Form Controller
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const rememberCheckbox = document.getElementById('remember-me');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorAlert = document.getElementById('error-alert');
+        const errorMessage = document.getElementById('error-message');
+        const passwordToggle = document.getElementById('password-toggle');
+        const demoBadge = document.getElementById('demo-credentials-badge');
+
+        const STORAGE_KEY = 'phishdetect_remember_email';
+
+        // Restore remembered email on page load
+        const rememberedEmail = localStorage.getItem(STORAGE_KEY);
+        if (rememberedEmail) {
+            emailInput.value = rememberedEmail;
+            rememberCheckbox.checked = true;
+            passwordInput.focus();
+        }
+
+        // Demo Credentials Autofill
+        if (demoBadge) {
+            demoBadge.addEventListener('click', () => {
+                emailInput.value = 'admin@phishdetect.ai';
+                passwordInput.value = 'admin123';
+                rememberCheckbox.checked = true;
+                hideError();
+                submitBtn.focus();
+            });
+        }
+
+        // Show/Hide Password Toggle
+        if (passwordToggle) {
+            passwordToggle.addEventListener('click', () => {
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                
+                const icon = document.getElementById('password-toggle-icon');
+                if (icon) {
+                    icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            });
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg || 'Invalid security credentials. Please try again.';
+            errorAlert.classList.add('visible');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function hideError() {
+            errorAlert.classList.remove('visible');
+        }
+
+        // Form Submit Handler
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                showError('Please provide both email and security key.');
+                return;
+            }
+
+            // Set loading state
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok && (data.success === true || !data.error)) {
+                    // Remember me logic
+                    if (rememberCheckbox.checked) {
+                        localStorage.setItem(STORAGE_KEY, email);
+                    } else {
+                        localStorage.removeItem(STORAGE_KEY);
+                    }
+
+                    // Success - redirect to dashboard
+                    window.location.href = '/dashboard';
+                } else {
+                    showError(data.error || data.message || 'Authentication failed. Please verify credentials.');
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                showError('Unable to connect to authentication server. Please check your network.');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+            }
+        });
+    </script>
+</body>
+</html>
